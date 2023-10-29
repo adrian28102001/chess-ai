@@ -5,7 +5,6 @@ from functools import wraps
 from Logger import Logger, BoardRepr
 import random
 
-
 logger = Logger()
 
 
@@ -17,6 +16,7 @@ def log_tree(func):
             depth = args[1]
             write_to_file(board, depth)
         return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -32,8 +32,18 @@ def is_capturing_move(board, move):
     return isinstance(board[move[0]][move[1]], ChessPiece)
 
 
+# transposition table, which is a type of caching mechanism to store previously calculated results of the minimax function for specific board states. This can significantly improve the performance of the minimax algorithm, especially in games with a lot of repeated positions or transpositions.
+transposition_table = {}
+
+
 @log_tree
 def minimax(board, depth, alpha, beta, max_player, save_move, data):
+    # Convert the board to a hashable type for storing in the transposition table
+    board_state = str(board)
+
+    # Check if the current board state is already in the transposition table
+    if board_state in transposition_table and transposition_table[board_state]['depth'] >= depth:
+        return transposition_table[board_state]['value']
 
     if depth == 0 or board.is_terminal():
         data[1] = board.evaluate()
@@ -47,6 +57,7 @@ def minimax(board, depth, alpha, beta, max_player, save_move, data):
                     piece = board[i][j]
                     moves = piece.filter_moves(piece.get_moves(board), board)
 
+                    #move ordering
                     moves.sort(key=lambda sorted_move: is_capturing_move(board, sorted_move), reverse=True)
 
                     for move in moves:
@@ -65,14 +76,15 @@ def minimax(board, depth, alpha, beta, max_player, save_move, data):
                         alpha = max(alpha, evaluation)
                         if beta <= alpha:
                             break
-        return data
+        transposition_table[board_state] = {'value': [data[0], max_eval], 'depth': depth}
+        return [data[0], max_eval]
     else:
         min_eval = math.inf
         for i in range(8):
             for j in range(8):
                 if isinstance(board[i][j], ChessPiece) and board[i][j].color == board.get_player_color():
                     piece = board[i][j]
-                    moves = piece.get_moves(board)
+                    moves = piece.filter_moves(piece.get_moves(board), board)
 
                     moves.sort(key=lambda sorted_move: is_capturing_move(board, sorted_move), reverse=True)
 
@@ -84,7 +96,8 @@ def minimax(board, depth, alpha, beta, max_player, save_move, data):
                         beta = min(beta, evaluation)
                         if beta <= alpha:
                             break
-        return data
+        transposition_table[board_state] = {'value': [data[0], min_eval], 'depth': depth}
+        return [data[0], min_eval]
 
 
 def progressive_deepening(board, max_depth):

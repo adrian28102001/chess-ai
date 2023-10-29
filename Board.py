@@ -7,7 +7,7 @@ class Board:
     whites = []
     blacks = []
 
-    def __init__(self, game_mode, ai=False, depth=2, log=False):    # game_mode == 0 : whites down/blacks up
+    def __init__(self, game_mode, ai=False, depth=1, log=True):    # game_mode == 0 : whites down/blacks up
         self.board = []
         self.game_mode = game_mode
         self.depth = depth
@@ -257,4 +257,9 @@ class Board:
             return self.whiteKing
         return self.blackKing
 
-
+    def generate_key(self):
+        key = ""
+        for row in self.board:
+            for piece in row:
+                key += str(piece)  # Assuming that str(piece) returns a unique string for each piece type and color
+        return key
